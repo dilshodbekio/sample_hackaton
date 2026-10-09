@@ -10,7 +10,7 @@ Minimal muvaffaqiyat: bitta PDF yuklanadi, savolga manba bilan jonli javob kelad
 ## Jamoa va papkalar
 
 - `ai/` — Dilshodbek. RAG servisi. Python + FastAPI, port 8001. LLM va embedding: Gemini API.
-- `app/` — Oybek. Backend (port 8000) + frontend + SQLite. Stack: [Oybek to'ldiradi]
+- `app/` — Oybek. Backend (port 8000) + frontend (port 5173) + SQLite. Stack: backend Python + FastAPI (`httpx` bilan ai/ ga proxy va SSE uzatish, DB uchun `sqlite3`), frontend React + Vite (JavaScript) + Tailwind CSS. Vite dev proxy `/api` → `localhost:8000`.
 - `docs/` — Shohijahon. Pitch va hujjatlar.
 
 Arxitektura: frontend → app backend (/api) → ai/ servisi → LLM API.
