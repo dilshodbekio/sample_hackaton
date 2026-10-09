@@ -1,7 +1,7 @@
-fastapi
-uvicorn[standard]
-python-dotenv
-python-multipart
-pypdf
-chromadb
-google-genai
+fastapi==0.143.0
+uvicorn==0.54.0
+python-dotenv==1.2.4
+python-multipart==0.0.32
+pypdf==6.20.0
+chromadb==1.5.9
+google-genai==2.29.0
