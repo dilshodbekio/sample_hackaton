@@ -27,13 +27,18 @@ class IngestError(Exception):
 # ʻ U+02BB, ʼ U+02BC, ‘ U+2018, ’ U+2019, ` U+0060 -> '
 _APOSTROPHES = str.maketrans({"ʻ": "'", "ʼ": "'", "‘": "'", "’": "'", "`": "'"})
 _HYPHEN_BREAK = re.compile(r"(\w)-[ \t]*\n[ \t]*(\w)")
+# Ingest'da bet matnidan olib tashlanadigan shovqin qatorlar (savolga qo'llanmaydi)
+_NOISE_LINES = re.compile(
+    r"^[ \t]*(?:Oldingi tahrirga qarang\.?|https?://lex\.uz/\S*[ \t]+\d+[ \t]*/[ \t]*\d+)[ \t]*$\n?",
+    re.MULTILINE | re.IGNORECASE,
+)
 _INLINE_SPACE = re.compile(r"[^\S\n]+")  # \n dan boshqa barcha bo'shliqlar (tab, NBSP, ...)
 _SPACE_AROUND_NL = re.compile(r" *\n *")
 _MANY_NL = re.compile(r"\n{3,}")
 
 
 def normalize_text(text: str) -> str:
-    text = unicodedata.normalize("NFC", text)
+    text = unicodedata.normalize("NFKC", text)  # ligatura (ﬁ -> fi), NBSP va h.k.; apostrof almashtirishdan OLDIN
     text = text.translate(_APOSTROPHES)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = _HYPHEN_BREAK.sub(r"\1-\2", text)  # "ilmiy-\nuslubiy" -> "ilmiy-uslubiy" (chiziqcha saqlanadi)
@@ -41,6 +46,11 @@ def normalize_text(text: str) -> str:
     text = _SPACE_AROUND_NL.sub("\n", text)
     text = _MANY_NL.sub("\n\n", text)  # paragraf ajratgichi \n\n saqlanadi
     return text.strip()
+
+
+def _strip_noise(text: str) -> str:
+    """Normallashgan bet matnidan shovqin qatorlarini olib tashlaydi (normallashdan KEYIN: xom matnda bo'shliqlar turlicha)."""
+    return _MANY_NL.sub("\n\n", _NOISE_LINES.sub("", text)).strip()
 
 
 # --- Bo'laklash ---
@@ -101,7 +111,7 @@ def read_pdf_pages(path: Path) -> list[str]:
         pages = []
         for i, page in enumerate(reader.pages, start=1):
             try:
-                pages.append(normalize_text(page.extract_text() or ""))
+                pages.append(_strip_noise(normalize_text(page.extract_text() or "")))
             except Exception:
                 log.warning("%s: %d-betdan matn olinmadi, o'tkazib yuborildi", path.name, i, exc_info=True)
                 pages.append("")

@@ -29,15 +29,19 @@ LLM_TEMPERATURE = 0.2
 
 # Retrieval
 TOP_K = 5
-# cosine masofasi; shundan KATTA bo'laklar tashlanadi. namuna_nizom.pdf o'lchovi: tegishli savollar top-1 0.18–0.25,
-# chegaradagi (hujjatda yo'q, mavzu yaqin) 0.28–0.36, umuman aloqasiz 0.44–0.50.
-MAX_DISTANCE = 0.40  # vaqtincha, faqat namuna_nizom.pdf bo'yicha o'lchangan
+# cosine masofasi; shundan KATTA bo'laklar tashlanadi. nizom_572.pdf (44 bet, 192 bo'lak) o'lchovi, top-1..top-5:
+# tegishli savollar 0.19–0.27, chegaradagi (mavzu yaqin, hujjatda yo'q) 0.28–0.36, umuman aloqasiz 0.41–0.45.
+# Chegaradagi savollar LLM'ga boradi (u "topilmadi" deydi), aloqasizlari LLM'siz kesiladi.
+# namuna_nizom.pdf (4 bet) bo'yicha ham mos: tegishli ≤ 0.25, chegara 0.28–0.36, aloqasiz ≥ 0.44.
+MAX_DISTANCE = 0.38
 MAX_QUESTION_CHARS = 1000
 MAX_BODY_BYTES = 64 * 1024  # /ask/stream so'rov body'si chegarasi
 QUERY_TIMEOUT_MS = 15_000  # savol embeddingi: foydalanuvchi kutib turadi, qisqa timeout
 QUERY_RETRY_ATTEMPTS = 2
 MAX_HISTORY = 6
 SNIPPET_CHARS = 200
+MAX_SOURCES = 3  # sources: ko'pi bilan shuncha bet
+SOURCES_MARGIN = 0.05  # sources: eng yaxshi masofadan shuncha ortiq bo'lmagan bo'laklar
 NOT_FOUND_TEXT = "Yuklangan hujjatlarda bu savolga javob topilmadi."
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024

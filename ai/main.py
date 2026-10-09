@@ -11,7 +11,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
 import store
-from config import MAX_BODY_BYTES, MAX_HISTORY, MAX_QUESTION_CHARS, MAX_UPLOAD_BYTES, NOT_FOUND_TEXT, SNIPPET_CHARS, UPLOADS_DIR
+from config import MAX_BODY_BYTES, MAX_HISTORY, MAX_QUESTION_CHARS, MAX_UPLOAD_BYTES, MAX_SOURCES, NOT_FOUND_TEXT, SNIPPET_CHARS, SOURCES_MARGIN, UPLOADS_DIR
 from generate import EMPTY_MESSAGE, stream_answer, user_message
 from ingest import process_document
 from retrieve import Hit, RequestError, retrieve
@@ -182,8 +182,12 @@ def parse_ask(body) -> tuple[str, list[str] | None, list[dict]]:
 
 
 def make_sources(hits: list[Hit]) -> list[dict]:
+    """hits relevantlik tartibida. LLM'ga hammasi beriladi, foydalanuvchiga esa faqat eng yaxshisiga yaqinlari."""
     seen, out = set(), []
+    limit = hits[0].distance + SOURCES_MARGIN
     for h in hits:
+        if h.distance > limit or len(out) >= MAX_SOURCES:
+            break
         key = (h.doc_id, h.page)
         if key in seen:
             continue

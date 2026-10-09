@@ -1,9 +1,12 @@
 """Gemini embedding. Hujjat va savol uchun prefikslar shu yerda (gemini-embedding-2 task_type ni qo'llamaydi)."""
 
+import logging
+import re
 import threading
+import time
 
 from google import genai
-from google.genai import types
+from google.genai import errors, types
 
 from config import (
     EMBEDDING_BATCH_SIZE,
@@ -13,6 +16,8 @@ from config import (
     QUERY_RETRY_ATTEMPTS,
     QUERY_TIMEOUT_MS,
 )
+
+log = logging.getLogger("ai.embeddings")
 
 _lock = threading.Lock()
 _client: genai.Client | None = None
@@ -61,19 +66,37 @@ def query_input(text: str) -> str:
     return f"task: search result | query: {text}"
 
 
+RATE_LIMIT_WAITS = 6  # ingest: kunlik/daqiqalik kvota tugasa serverning retryDelay qiymatini shuncha marta kutamiz
+_RETRY_DELAY = re.compile(r"retry in ([\d.]+)s|'retryDelay': '([\d.]+)s'")
+
+
+def _retry_delay(exc: errors.APIError) -> float:
+    m = _RETRY_DELAY.search(str(exc))
+    return float(m.group(1) or m.group(2)) if m else 30.0
+
+
 def embed_texts(texts: list[str], client: genai.Client | None = None) -> list[list[float]]:
     """Har bir matnga alohida vektor. Diqqat: contents=[str, ...] berilsa gemini-embedding-2
     hammasini BITTA vektorga birlashtiradi, shuning uchun har biri alohida Content qilinadi."""
+    own_client = client is None  # True: ingest yo'li
     client = client or get_client()
     config = types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIM)
     vectors: list[list[float]] = []
     for i in range(0, len(texts), EMBEDDING_BATCH_SIZE):
         batch = texts[i : i + EMBEDDING_BATCH_SIZE]
-        resp = client.models.embed_content(
-            model=EMBEDDING_MODEL,
-            contents=[types.Content(parts=[types.Part(text=t)]) for t in batch],
-            config=config,
-        )
+        contents = [types.Content(parts=[types.Part(text=t)]) for t in batch]
+        for attempt in range(RATE_LIMIT_WAITS + 1):
+            try:
+                resp = client.models.embed_content(model=EMBEDDING_MODEL, contents=contents, config=config)
+                break
+            except errors.APIError as e:
+                # Free-tier: daqiqasiga ~100 ta embed so'rovi. Faqat ingest (client berilmagan) kutadi,
+                # savol yo'lida foydalanuvchi kutib turgani uchun darhol xato beriladi.
+                if e.code != 429 or not own_client or attempt == RATE_LIMIT_WAITS:
+                    raise
+                wait = _retry_delay(e) + 1
+                log.warning("embedding kvotasi (429): %.0f s kutiladi (%d/%d)", wait, attempt + 1, RATE_LIMIT_WAITS)
+                time.sleep(wait)
         if not resp.embeddings or len(resp.embeddings) != len(batch):
             got = len(resp.embeddings or [])
             raise RuntimeError(f"Embedding soni mos emas: {len(batch)} ta so'raldi, {got} ta keldi")
