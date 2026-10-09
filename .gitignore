@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -218,3 +218,25 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Loyihaga xos ---
+
+# Barcha env variantlari (namunadan tashqari)
+.env.*
+!.env.example
+
+# Node / frontend
+node_modules/
+.vite/
+npm-debug.log*
+
+# RAG ma'lumotlari va bazalar
+ai/data/
+chroma/
+uploads/
+*.db
+*.sqlite3
+
+# Tizim
+.DS_Store
+Thumbs.db
