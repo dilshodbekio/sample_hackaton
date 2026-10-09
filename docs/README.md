@@ -1,0 +1,1 @@
+pitch va hujjatlar shohisjahon

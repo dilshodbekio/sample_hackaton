@@ -1,0 +1,1 @@
+Bu joyda men kod yozaman 

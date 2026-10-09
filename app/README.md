@@ -1,0 +1,1 @@
+Bu joyga oybek kod yozadi 
